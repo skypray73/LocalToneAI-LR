@@ -32,7 +32,7 @@ python -c "import sys; print(64 if sys.maxsize > 2**32 else 32)"
 
 這一步是在 **Windows 設定「使用者環境變數」**，不是在 Lightroom 輸入，也不是建立一個叫 `OLLAMA_MODELS` 的資料夾。環境變數是告訴 Ollama 啟動時要使用的設定。
 
-先在檔案總管建立 `C:\AI\Models\Ollama`。以下圖形介面或 PowerShell **擇一操作即可**，不用做兩次。
+先在檔案總管建立 `C:\AI\Models\Ollama`。以下兩種方法 **擇一操作即可**，不用做兩次；**推薦使用方法二 PowerShell**，可一次設定三項變數，並立即套用到目前視窗。
 
 ### 方法一：Windows 中文介面（不熟悉指令可用這個）
 
@@ -57,7 +57,7 @@ python -c "import sys; print(64 if sys.maxsize > 2**32 else 32)"
 變數值  ：C:\AI\Models\Ollama
 ```
 
-### 方法二：PowerShell 設定（和上面相同，擇一使用）
+### 方法二：PowerShell 設定（推薦使用）
 
 從「開始」開啟 PowerShell，貼上以下內容。前四行建立模型資料夾並永久儲存使用者設定；後三行讓目前視窗立即使用這些值：
 
