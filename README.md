@@ -57,7 +57,7 @@ Python 本身可安裝在安裝程式的預設位置，不必搬進 `C:\AI`。**
 
 請先建立模型資料夾，再設定變數。既有 Ollama 服務不會自動讀取新設定；必須從已套用設定的新 PowerShell 啟動後才下載模型，否則仍可能存到舊位置。第一次設定的完整指令見上方連結。
 
-這個設定關閉後，修圖仍會保存在目前編目，不會因此遺失滑桿設定。換編目時要重新檢查；外掛不會替你切換這個選項。版本用字、勾選狀態與原檔影響，見 [完整中文檢查步驟](docs/INSTALL.zh-TW.md#check-xmp)。
+Lightroom 的「自動將變更寫入附屬檔案 (XMP/ACR)」關閉後，修圖仍會保存在目前編目，不會因此遺失滑桿設定。換編目時要重新檢查；外掛不會替你切換這個選項。版本用字、勾選狀態與原檔影響，見 [完整中文檢查步驟](docs/INSTALL.zh-TW.md#check-xmp)。
 
 已經裝好本地修圖外掛的人，不用重複下載 Qwen。更新程式前先關閉 Lightroom；更新後重新開啟。
 
@@ -75,9 +75,11 @@ Python 本身可安裝在安裝程式的預設位置，不必搬進 `C:\AI`。**
 
 ## 操作示範影片
 
-[▶ 觀看 LocalToneAI 操作示範（約 7 秒）](docs/media/localtoneai-demo.mp4)
+https://github.com/user-attachments/assets/87eec719-4847-4963-a6d8-b9d844508f60
 
-這段短片由使用者提供，示範實際操作畫面。點上方連結可在 GitHub 影片檔案頁觀看；若瀏覽器沒有顯示播放器，可下載 MP4 播放。影片是操作示例，不代表每張照片都需要或一定會套用 AI 額外微調。
+[下載 MP4 備份（約 7 秒）](https://github.com/skypray73/LocalToneAI-LR/raw/refs/heads/main/docs/media/localtoneai-demo.mp4)
+
+這段短片由使用者提供，可在 GitHub 本頁的影片播放器觀看；若瀏覽器不支援，請下載 MP4 播放。影片是操作示例，不代表每張照片都需要或一定會套用 AI 額外微調。
 
 ## 5. 現在有哪些修圖規則？
 
