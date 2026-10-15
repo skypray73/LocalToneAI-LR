@@ -1,4 +1,4 @@
-# LumaPilot for Lightroom
+# LocalToneAI for Lightroom
 
 **本地 AI 輔助 Lightroom 修圖** · Windows · Lightroom Classic · 1.11.1
 
@@ -34,7 +34,7 @@ C:\AI\
 └─ LightroomJobs\                  每次修圖產生的預覽、計畫和紀錄
 ```
 
-Python 本身可安裝在安裝程式的預設位置，不必搬進 `C:\AI`。**原始 RAW、照片資料夾和 Lightroom 編目維持你原本的位置。** 目前程式使用上述固定工作路徑；不要只把其中一個目錄任意改名。專案品牌是 LumaPilot，執行目錄仍叫 `LightroomLocalDevelop`，是為了延續現有外掛路徑。
+Python 本身可安裝在安裝程式的預設位置，不必搬進 `C:\AI`。**原始 RAW、照片資料夾和 Lightroom 編目維持你原本的位置。** 目前程式使用上述固定工作路徑；不要只把其中一個目錄任意改名。專案品牌是 LocalToneAI，執行目錄仍叫 `LightroomLocalDevelop`，是為了延續現有外掛路徑。
 
 ## 3. 第一次安裝
 
@@ -42,10 +42,20 @@ Python 本身可安裝在安裝程式的預設位置，不必搬進 `C:\AI`。**
 
 1. 安裝 64 位元 Python 3.14。
 2. 從 Ollama 官方下載 Windows 可攜版，完整解壓至 `C:\AI\Ollama`。
-3. 設定 `OLLAMA_MODELS=C:\AI\Models\Ollama`、`OLLAMA_NO_CLOUD=1`，啟動 Ollama，下載 `qwen3-vl:8b-instruct`。
+3. Windows「開始」搜尋 **「環境變數」→「編輯您帳戶的環境變數」→ 上半部「使用者變數」→「新增…」**，分別填入下表的名稱與數值。完成後按「確定」，**正常結束並重新啟動 Ollama**，再下載 `qwen3-vl:8b-instruct`。已有同名項目就按「編輯…」。[完整中文設定與檢查步驟](docs/INSTALL.zh-TW.md#ollama-environment)。
 4. 在本頁 **Code → Download ZIP** 下載專案並解壓。在解壓後目錄執行 `Setup-LocalAI.ps1`，建立外掛執行目錄與獨立 Python 環境。
 5. Lightroom：**檔案 → 增效模組管理員 → 新增**，選擇 `C:\AI\LightroomLocalDevelop\LightroomLocalDevelop.lrplugin`。英文介面是 **File → Plug-in Manager → Add**；不同版本中文可能略有差異。
 6. Lightroom：**頂端「編輯(E)」→「編目設定…」→「中繼資料」分頁 → 上方「編輯」區塊**，找到 **「自動將變更寫入附屬檔案 (XMP/ACR)」**，確認左邊方框 **空白、沒有勾號**，再按右下方 **「確定」**。原本已空白就保持空白。
+
+第 3 步的 Windows 使用者變數如下，**名稱與數值分開填，不加引號**：
+
+| 變數名稱 | 變數值 |
+|---|---|
+| `OLLAMA_MODELS` | `C:\AI\Models\Ollama` |
+| `OLLAMA_NO_CLOUD` | `1` |
+| `OLLAMA_HOST` | `127.0.0.1:11434` |
+
+請先建立模型資料夾，再設定變數。既有 Ollama 服務不會自動讀取新設定；必須從已套用設定的新 PowerShell 啟動後才下載模型，否則仍可能存到舊位置。第一次設定的完整指令見上方連結。
 
 這個設定關閉後，修圖仍會保存在目前編目，不會因此遺失滑桿設定。換編目時要重新檢查；外掛不會替你切換這個選項。版本用字、勾選狀態與原檔影響，見 [完整中文檢查步驟](docs/INSTALL.zh-TW.md#check-xmp)。
 
@@ -62,6 +72,12 @@ Python 本身可安裝在安裝程式的預設位置，不必搬進 `C:\AI`。**
 入口是頂端「圖庫」選單，不是照片右鍵選單。外掛顯示名稱仍為 **本地 AI 顯影**。
 
 **不需要先縮小 RAW、不需要把 JPEG 匯入，也不用手動選 plan.tsv。** 小張 JPEG 是外掛自行建立的分析資料，不會重新匯入編目。詳細操作、完成視窗與錯誤排查見 [使用與排錯](docs/USAGE.zh-TW.md)。
+
+## 操作示範影片
+
+[▶ 觀看 LocalToneAI 操作示範（約 7 秒）](docs/media/localtoneai-demo.mp4)
+
+這段短片由使用者提供，示範實際操作畫面。點上方連結可在 GitHub 影片檔案頁觀看；若瀏覽器沒有顯示播放器，可下載 MP4 播放。影片是操作示例，不代表每張照片都需要或一定會套用 AI 額外微調。
 
 ## 5. 現在有哪些修圖規則？
 

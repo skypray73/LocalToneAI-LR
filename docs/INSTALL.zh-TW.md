@@ -26,9 +26,40 @@ python -c "import sys; print(64 if sys.maxsize > 2**32 else 32)"
 
 依據：[Ollama 官方 Windows 說明](https://docs.ollama.com/windows)。NVIDIA 顯示卡請先安裝可支援你顯示卡的官方驅動程式。
 
-## C. 指定模型位置並關閉雲端
+<a id="ollama-environment"></a>
 
-在 PowerShell 執行：
+## C. 設定 Ollama 環境變數：模型放哪裡、怎麼關閉雲端
+
+這一步是在 **Windows 設定「使用者環境變數」**，不是在 Lightroom 輸入，也不是建立一個叫 `OLLAMA_MODELS` 的資料夾。環境變數是告訴 Ollama 啟動時要使用的設定。
+
+先在檔案總管建立 `C:\AI\Models\Ollama`。以下圖形介面或 PowerShell **擇一操作即可**，不用做兩次。
+
+### 方法一：Windows 中文介面（不熟悉指令可用這個）
+
+1. 點 Windows **「開始」**，搜尋 **「環境變數」**。
+2. 選 **「編輯您帳戶的環境變數」**。不同 Windows 版本名稱可能略有差異；如果開到「系統內容」，再按其中的 **「環境變數…」** 按鈕。
+3. 在「環境變數」視窗上半部，找到 **「使用者變數」**（後面通常會顯示目前帳號）。本流程設定這一區，不需要修改下半部的「系統變數」。
+4. 按上半部的 **「新增…」**，分別建立下表三項。同名變數已存在時，選取它再按 **「編輯…」**，更新數值即可。
+
+| 「變數名稱」欄填入 | 「變數值」欄填入 | 用途 |
+|---|---|---|
+| `OLLAMA_MODELS` | `C:\AI\Models\Ollama` | 下載的 Qwen 模型存到這個資料夾 |
+| `OLLAMA_NO_CLOUD` | `1` | 停用 Ollama 的雲端模型等雲端功能 |
+| `OLLAMA_HOST` | `127.0.0.1:11434` | 讓 Ollama API 只綁定這台電腦的本機位址 |
+
+5. 每新增一項按 **「確定」**；三項完成後，再按「環境變數」視窗的 **「確定」**。若還有外層設定視窗，也按「確定」關閉。
+6. 關閉之前的 PowerShell 視窗，重新從「開始」開啟 PowerShell。**原本正在執行的 Ollama 也必須正常結束再啟動**，不會因為新增變數就自動更新。
+
+欄位內容不要加引號，也不要把 `OLLAMA_MODELS=C:\AI\Models\Ollama` 整串填進「變數名稱」。應分成名稱與數值兩欄，例如：
+
+```text
+變數名稱：OLLAMA_MODELS
+變數值  ：C:\AI\Models\Ollama
+```
+
+### 方法二：PowerShell 設定（和上面相同，擇一使用）
+
+從「開始」開啟 PowerShell，貼上以下內容。前四行建立模型資料夾並永久儲存使用者設定；後三行讓目前視窗立即使用這些值：
 
 ```powershell
 New-Item -ItemType Directory -Force 'C:\AI\Models\Ollama' | Out-Null
@@ -38,12 +69,31 @@ New-Item -ItemType Directory -Force 'C:\AI\Models\Ollama' | Out-Null
 $env:OLLAMA_MODELS = 'C:\AI\Models\Ollama'
 $env:OLLAMA_NO_CLOUD = '1'
 $env:OLLAMA_HOST = '127.0.0.1:11434'
+```
+
+### 檢查設定，然後啟動 Ollama
+
+在已套用設定的 PowerShell 執行：
+
+```powershell
+$env:OLLAMA_MODELS
+$env:OLLAMA_NO_CLOUD
+$env:OLLAMA_HOST
+```
+
+應依序顯示 `C:\AI\Models\Ollama`、`1`、`127.0.0.1:11434`。這只是檢查**目前 PowerShell 視窗**的設定，不能證明舊的 Ollama 服務已更新。
+
+若 Ollama 原本已執行，桌面版可從通知區圖示正常結束；可攜版若是在 PowerShell 執行 `serve`，回到那個視窗按 **Ctrl+C** 結束該服務。確認沒有本地修圖工作正在使用它，再從帶有正確設定的 PowerShell 啟動：
+
+```powershell
 & 'C:\AI\Ollama\ollama.exe' serve
 ```
 
-最後一行會持續執行服務，先保持視窗開啟。若 11434 已被占用，通常是既有 Ollama 正在執行；不要啟動第二個。**既有服務不會自動讀到剛改的環境變數**，需先正常結束原服務，再從帶有上述設定的 PowerShell 啟動。
+此視窗會持續執行服務，先保持開啟，再照下一節另外開視窗下載模型。若 11434 已被占用，代表仍有其他程式／服務占用；不要再開第二個服務，也不要假設它已讀到新設定。
 
-User 環境變數供未來新程序繼承；`$env:` 是讓目前視窗立即生效。關閉雲端後仍需重啟既有服務。依據：[Ollama FAQ](https://docs.ollama.com/faq)。
+**模型實際存放位置由正在執行的 Ollama 服務決定**，不只是下載指令視窗裡的變數。因此要先完成設定並重新啟動服務，再下載模型。改這個設定不會自動搬移先前下載在其他位置的模型。
+
+依據：[Ollama 官方 Windows 模型位置說明](https://docs.ollama.com/windows)與 [Ollama FAQ：Windows 環境變數及停用雲端](https://docs.ollama.com/faq)。
 
 ## D. 下載看照片的 AI 模型
 

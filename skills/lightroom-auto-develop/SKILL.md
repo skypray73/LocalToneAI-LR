@@ -1,9 +1,9 @@
 ---
 name: lightroom-auto-develop
-description: 協助安裝、維護和排查 LumaPilot 本地 AI Lightroom Classic 修圖外掛，解釋修圖計畫與批次紀錄，依需求修改人像、風景和夜景規則。
+description: 協助安裝、維護和排查 LocalToneAI 本地 AI Lightroom Classic 修圖外掛，解釋修圖計畫與批次紀錄，依需求修改人像、風景和夜景規則。
 ---
 
-# LumaPilot 本地 AI 輔助 Lightroom 修圖
+# LocalToneAI 本地 AI 輔助 Lightroom 修圖
 
 日常入口是「圖庫 → 增效模組額外資訊 → 本地分析並套用選取照片」。技能提供安裝與維護流程，不是照片推論服務。先依使用者需求選讀 [安裝](references/INSTALL.zh-TW.md)、[操作與排錯](references/USAGE.zh-TW.md)、[規則](references/RULES.zh-TW.md)。
 

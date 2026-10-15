@@ -20,7 +20,7 @@ skills\lightroom-auto-develop\
 
 ```text
 $lightroom-auto-develop
-依照 LumaPilot 的文件幫我檢查本地環境：Ollama、Qwen 模型、Python 和外掛路徑。
+依照 LocalToneAI 的文件幫我檢查本地環境：Ollama、Qwen 模型、Python 和外掛路徑。
 不要修改照片或編目。
 ```
 
