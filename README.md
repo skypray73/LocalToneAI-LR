@@ -45,7 +45,9 @@ Python 本身可安裝在安裝程式的預設位置，不必搬進 `C:\AI`。**
 3. 設定 `OLLAMA_MODELS=C:\AI\Models\Ollama`、`OLLAMA_NO_CLOUD=1`，啟動 Ollama，下載 `qwen3-vl:8b-instruct`。
 4. 在本頁 **Code → Download ZIP** 下載專案並解壓。在解壓後目錄執行 `Setup-LocalAI.ps1`，建立外掛執行目錄與獨立 Python 環境。
 5. Lightroom：**檔案 → 增效模組管理員 → 新增**，選擇 `C:\AI\LightroomLocalDevelop\LightroomLocalDevelop.lrplugin`。英文介面是 **File → Plug-in Manager → Add**；不同版本中文可能略有差異。
-6. Lightroom：**編目設定 → 中繼資料**，取消勾選 **「自動將變更寫入附屬檔案 (XMP/ACR)」**。
+6. Lightroom：**頂端「編輯(E)」→「編目設定…」→「中繼資料」分頁 → 上方「編輯」區塊**，找到 **「自動將變更寫入附屬檔案 (XMP/ACR)」**，確認左邊方框 **空白、沒有勾號**，再按右下方 **「確定」**。原本已空白就保持空白。
+
+這個設定關閉後，修圖仍會保存在目前編目，不會因此遺失滑桿設定。換編目時要重新檢查；外掛不會替你切換這個選項。版本用字、勾選狀態與原檔影響，見 [完整中文檢查步驟](docs/INSTALL.zh-TW.md#check-xmp)。
 
 已經裝好本地修圖外掛的人，不用重複下載 Qwen。更新程式前先關閉 Lightroom；更新後重新開啟。
 
