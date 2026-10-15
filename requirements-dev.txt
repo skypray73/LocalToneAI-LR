@@ -1,0 +1,3 @@
+-r requirements.txt
+lupa>=2.6,<3
+PyYAML>=6,<7

@@ -1,0 +1,100 @@
+# LumaPilot for Lightroom
+
+**本地 AI 輔助 Lightroom 修圖** · Windows · Lightroom Classic · 1.11.1
+
+先讓 Lightroom「自動」建立基礎校正，再讓本機 AI 看校正後的預覽，判斷是否需要微調曝光、亮部與陰影。結果直接套用到目前編目的顯影滑桿。
+
+## 1. 先裝哪些程式和 AI？
+
+| 元件 | 用來做什麼 | 要不要自己下載？ |
+|---|---|---|
+| **Lightroom Classic 電腦版** | 選照片、顯示效果、保存顯影設定；它就是操作介面 | 需要，使用你現有的合法安裝 |
+| **Ollama** | 在電腦上執行 AI 模型的本地服務 | 需要，使用官方 Windows 可攜版 |
+| **Qwen3-VL 8B Instruct** | 看照片、辨識人像／風景／夜景，提出微調 | 需要，在 Ollama 下載 `qwen3-vl:8b-instruct`，約 6.1GB |
+| **YuNet** | 偵測人臉和五官，輔助臉頰、額頭亮度檢查 | 專案已附約 227KB 的 ONNX 模型 |
+| **Python 3.14，64 位元** | 執行本地分析器 | 需要；安裝腳本會另外建立獨立環境 |
+| **Pillow、OpenCV、NumPy** | 讀預覽、偵測人臉和計算亮度 | 安裝腳本自動安裝 |
+
+**不用另裝聊天前端或 Open WebUI，也不用雲端 API 金鑰。** 日常只在 Lightroom 選照片、執行外掛。首次下載程式、套件與模型需要網路；準備完成後，照片分析只連本機 `127.0.0.1:11434`。
+
+本版本驗證環境是 Windows x64、Python 3.14、RTX 5080 16GB、96GB RAM。這是已測環境，不是最低硬體需求；其他硬體的速度和相容性需自行確認。
+
+## 2. 全部放在哪些資料夾？
+
+```text
+C:\AI\
+├─ Ollama\                         Ollama 可攜版完整程式與 GPU 程式庫
+│  └─ ollama.exe
+├─ Models\Ollama\                  Qwen 模型；由 Ollama 管理，不手動搬 blobs
+├─ LightroomLocalDevelop\          本專案的執行目錄
+│  ├─ LightroomLocalDevelop.lrplugin\  Lightroom 要加入的外掛資料夾
+│  ├─ scripts\                     本地分析程式
+│  ├─ models\                      隨附 YuNet 人臉偵測模型與授權
+│  └─ .venv\                       獨立 Python 與依賴；安裝腳本建立
+└─ LightroomJobs\                  每次修圖產生的預覽、計畫和紀錄
+```
+
+Python 本身可安裝在安裝程式的預設位置，不必搬進 `C:\AI`。**原始 RAW、照片資料夾和 Lightroom 編目維持你原本的位置。** 目前程式使用上述固定工作路徑；不要只把其中一個目錄任意改名。專案品牌是 LumaPilot，執行目錄仍叫 `LightroomLocalDevelop`，是為了延續現有外掛路徑。
+
+## 3. 第一次安裝
+
+完整可照做的指令見 **[安裝步驟](docs/INSTALL.zh-TW.md)**。順序如下：
+
+1. 安裝 64 位元 Python 3.14。
+2. 從 Ollama 官方下載 Windows 可攜版，完整解壓至 `C:\AI\Ollama`。
+3. 設定 `OLLAMA_MODELS=C:\AI\Models\Ollama`、`OLLAMA_NO_CLOUD=1`，啟動 Ollama，下載 `qwen3-vl:8b-instruct`。
+4. 在本頁 **Code → Download ZIP** 下載專案並解壓。在解壓後目錄執行 `Setup-LocalAI.ps1`，建立外掛執行目錄與獨立 Python 環境。
+5. Lightroom：**檔案 → 增效模組管理員 → 新增**，選擇 `C:\AI\LightroomLocalDevelop\LightroomLocalDevelop.lrplugin`。英文介面是 **File → Plug-in Manager → Add**；不同版本中文可能略有差異。
+6. Lightroom：**編目設定 → 中繼資料**，取消勾選 **「自動將變更寫入附屬檔案 (XMP/ACR)」**。
+
+已經裝好本地修圖外掛的人，不用重複下載 Qwen。更新程式前先關閉 Lightroom；更新後重新開啟。
+
+## 4. 每次怎麼修圖？
+
+1. 在 Lightroom「圖庫」選取要處理的照片；只處理這次選取，不掃描硬碟資料夾。
+2. 點頂端選單 **圖庫 → 增效模組額外資訊 → 本地分析並套用選取照片**。
+3. 確認已關閉自動寫入 XMP，開始處理。期間不要切照片或操作滑桿。
+4. 外掛先做 Lightroom 原生「自動」，確認滑桿已變更並穩定後，才重新轉存 1024px 預覽，讓本地 AI 分析、套用額外微調。未確認的照片另外列出。
+5. 完成後切到 **編輯相片**，查看臉部、背景高光和實際效果。
+
+入口是頂端「圖庫」選單，不是照片右鍵選單。外掛顯示名稱仍為 **本地 AI 顯影**。
+
+**不需要先縮小 RAW、不需要把 JPEG 匯入，也不用手動選 plan.tsv。** 小張 JPEG 是外掛自行建立的分析資料，不會重新匯入編目。詳細操作、完成視窗與錯誤排查見 [使用與排錯](docs/USAGE.zh-TW.md)。
+
+## 5. 現在有哪些修圖規則？
+
+| 情況 | 行為 |
+|---|---|
+| 所有照片 | 先 Lightroom 原生自動，再讓模型判斷亮暗；白平衡、裁切與遮色片不自動修改 |
+| 人像為主 | 銳利化數量設 0；正值鮮豔度保留 LR 自動的約 70%；飽和度沿用 LR 自動 |
+| 風景為主 | 清晰度 **設 +20**、去朦朧 **設 +20**；銳利化及色彩沿用原有規則 |
+| 臉部偏暗 | 優先檢查臉頰、額頭候選區域，視模型和量測結果提陰影、壓亮部 |
+| 夜景 | 陰影額外增量放寬至 **±100**；一般情境 ±70，最終滑桿仍限制在 ±100 |
+| 刻意剪影或不確定 | 保留氣氛或列待確認，不一律拉亮 |
+
+「設 +20」是絕對目標，重跑不會一直累加。臉部補光仍使用**全圖滑桿**，沒有局部人像遮色片。臉頰／額頭是五官位置推算的候選區域，不是精確皮膚分割；不能保證每張臉都被正確判斷。規則和限制見 [修圖邏輯](docs/RULES.zh-TW.md)。
+
+## 6. 會不會動到原始檔？
+
+外掛不覆寫、搬移或改名來源照片，不儲存來源中繼資料、不更新 DNG。顯影設定由 Lightroom SDK 寫入**目前編目**。
+
+**必須維持關閉 Lightroom 自己的「自動將變更寫入附屬檔案 (XMP/ACR)」。** 外掛無法可靠替你讀取或關閉它。也請勿手動執行「儲存中繼資料」來寫回原檔。
+
+編目、快取和 `C:\AI\LightroomJobs` 的工作資料仍會寫入硬碟。外掛不自動建立快照；復原請使用 Lightroom 步驟記錄，或事先自行建立快照。工作資料目前不會自動清除，沒有工作執行時可自行刪除已不需要的批次。
+
+## 7. SKILL 怎麼用？（選用）
+
+SKILL 是提供給相容 AI 助理的**安裝、維護與排錯工作流程**，不是修圖模型，也不是 Lightroom 的必要元件。日常操作只用上述 Lightroom 外掛即可。
+
+隨附於 [`skills/lightroom-auto-develop`](skills/lightroom-auto-develop/SKILL.md)。安裝位置、示例指令和能做什麼見 [SKILL 使用方法](docs/SKILL.zh-TW.md)。
+
+## 開發與驗證
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m unittest discover -s tests -p 'test_*.py'
+```
+
+測試包含 Lua SDK 模擬、身分／baseline 檢查、分類規則、亮暗範圍與補光防護，不會操作你的編目。通過測試不等於所有照片的視覺品質已驗證。Lightroom SDK 存在版本差異，首次使用請先選少量照片。
+
+主程式採 [MIT 授權](LICENSE)，第三方模型與依賴各自遵循其授權，見 [第三方說明](THIRD_PARTY_NOTICES.md)。本專案不隸屬 Adobe、Ollama 或 Qwen。
