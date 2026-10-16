@@ -14,10 +14,13 @@ class AutoTests(unittest.TestCase):
                 folder=Path(temp)
                 version=4 if failed else 3
                 (folder/'local-result.tsv').write_text(f'LRRESULT\t{version}\t{ready}\t{ready}\t0\t{1-ready}\t0\t{failed}\n')
+                (folder/'local-result').mkdir()
+                (folder/'local-result/progress.tsv').write_text('LRPROGRESS\t2\t0\t1\tanalysing\t123\tDSC_123.NEF\t0\n')
                 lua=LuaRuntime(unpack_returned_tuples=True)
                 g=lua.globals(); g.folder=folder.as_posix();g.plugin=PLUGIN.as_posix();g.answer=answer;g.cancel=cancel
                 g.unchanged=unchanged
                 g.getCommon=lambda:lua.execute((PLUGIN/'Common.lua').read_text())
+                g.getModel=lambda:lua.execute((PLUGIN/'ModelProgress.lua').read_text(encoding='utf-8'))
                 lua.execute('''
                 calls=0; exports=0; autoCalls=0; messages={}; commands={}; busy=false; deferred=nil; portions=0
                 catalog={}; photo={localIdentifier=123}
@@ -31,7 +34,13 @@ class AutoTests(unittest.TestCase):
                 _PLUGIN={path=plugin}
                 modules={
                   LrApplication={activeCatalog=function() return catalog end},
-                  LrDialogs={confirm=function() return answer end,message=function(a,b) messages[#messages+1]={a,b} end},
+                  LrDialogs={confirm=function() return answer end,message=function(a,b) messages[#messages+1]={a,b} end,
+                    showModalProgressDialog=function(opts)
+                      assert(opts.functionContext and opts.cannotCancel==false)
+                      modalCalls=(modalCalls or 0)+1
+                      return modules.LrProgressScope()
+                    end},
+                  LrFunctionContext={callWithContext=function(n,f) f({}) end},
                   LrTasks={startAsyncTask=function(f)
                     if busy then deferred=f else busy=true;f();busy=false end
                   end,pcall=pcall,sleep=function()
@@ -47,6 +56,7 @@ class AutoTests(unittest.TestCase):
                 function import(n) return modules[n] end
                 function dofile(path)
                   if path:match('Common.lua$') then return getCommon() end
+                  if path:match('ModelProgress.lua$') then return getModel() end
                   if path:match('AutoToneCore.lua$') then return function(cat,p,item,state)
                     assert(exports==0 and calls==0);autoCalls=autoCalls+1;state.applied=state.applied+1;
                     state.autoTone=1;state.toneStarted=1;current.Exposure2012=0.4
@@ -80,6 +90,7 @@ class AutoTests(unittest.TestCase):
                     self.assertIn('0 張已套用 AI 微調',g.messages[1][2])
                     self.assertEqual(g.current['Exposure2012'],0.4)
                 if expected:
+                    self.assertEqual(g.modalCalls,1)
                     self.assertEqual(g.current['Exposure2012'],0.6)
                     self.assertGreater(g.portions,0)
                     job=json.loads((folder/'local-job.json').read_text(encoding='utf-8'))

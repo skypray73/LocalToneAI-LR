@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 import time
 import urllib.request
+from urllib.parse import quote
 from PIL import Image, ImageOps
 from build_plan import compile_plan, RANGES
 from face_light import detect_faces, face_sheet, face_adjustments
@@ -251,8 +252,19 @@ def write_json(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
-def write_progress(folder, done, total, stage):
-    (folder / 'progress.tsv').write_text(f'LRPROGRESS\t1\t{done}\t{total}\t{stage}\n', encoding='utf-8')
+def write_progress(folder, done, total, stage, photo=None, failed=0):
+    photo = photo or {}
+    name = photo.get('path', '').replace('\\', '/').rsplit('/', 1)[-1]
+    fields = ['LRPROGRESS', '2', str(done), str(total), stage,
+              quote(str(photo.get('photo_id', '')), safe=''), quote(name, safe=''), str(failed)]
+    # Readers see a complete record. A temporarily locked progress file must not
+    # turn a successful inference into a failed photo on Windows.
+    try:
+        pending = folder / 'progress.pending'
+        pending.write_text('\t'.join(fields) + '\n', encoding='utf-8')
+        pending.replace(folder / 'progress.tsv')
+    except OSError:
+        pass
 
 
 def main():
@@ -280,7 +292,7 @@ def main():
         for index, photo in enumerate(manifest['photos'], 1):
             photo = dict(photo, pipeline_stage=photo.get('pipeline_stage', manifest.get('pipeline_stage','current-develop')))
             started = time.monotonic()
-            write_progress(args.out, index - 1, len(manifest['photos']), 'analysing')
+            write_progress(args.out, index - 1, len(manifest['photos']), 'analysing', photo, len(failures))
             print(f'[{index}/{len(manifest["photos"])}] ID {photo["photo_id"]}: starting local inference', flush=True)
             try:
                 preview = (root / photo['preview']).resolve()
@@ -300,7 +312,8 @@ def main():
                 print(f'[{index}/{len(manifest["photos"])}] ID {photo["photo_id"]}: FAILED: {exc}', flush=True)
             write_json(args.out / 'decisions.json', decisions)
             write_json(args.out / 'failures.json', failures)
-            write_progress(args.out, index, len(manifest['photos']), 'analysing')
+            write_progress(args.out, index, len(manifest['photos']), 'between-photos', failed=len(failures))
+        write_progress(args.out, len(manifest['photos']), len(manifest['photos']), 'compiling', failed=len(failures))
         plan, presets, report = compile_plan(manifest, decisions)
         (args.out / 'presets').mkdir()
         (args.out / 'plan.tsv').write_text(plan, encoding='utf-8', newline='\n')
@@ -308,7 +321,7 @@ def main():
             (args.out / 'presets' / f'LocalAI-{pid}.xmp').write_bytes(data)
         report.update({'source': 'local-ollama', 'model': args.model, 'failures': failures})
         write_json(args.out / 'report.json', report)
-        write_progress(args.out, len(manifest['photos']), len(manifest['photos']), 'complete')
+        write_progress(args.out, len(manifest['photos']), len(manifest['photos']), 'complete', failed=len(failures))
         print(f'Complete: {len(report["ready"])} ready, {len(report["skipped"])} skipped, {len(failures)} failures. Lightroom apply/visual verification pending.', flush=True)
         if failures:
             parser.exit(1, 'Partial analysis; see failures.json. Failed photos are not in the plan.\n')

@@ -8,6 +8,7 @@ local M=dofile(LrPathUtils.child(_PLUGIN.path,'Common.lua'))
 local export=dofile(LrPathUtils.child(_PLUGIN.path,'ExportCore.lua'))
 local apply=dofile(LrPathUtils.child(_PLUGIN.path,'ApplyCore.lua'))
 local runAutoTone=dofile(LrPathUtils.child(_PLUGIN.path,'AutoToneCore.lua'))
+local runModel=dofile(LrPathUtils.child(_PLUGIN.path,'ModelProgress.lua'))
 local function quoteArg(s)
     if s:find('[%%!"\r\n]') then error('Unsupported command path characters') end
     return '"'..s..'"'
@@ -73,32 +74,11 @@ LrTasks.startAsyncTask(function()
         progress:setCaption('Local model analysing; waiting / 本地模型分析中，請等待')
         local script=LrPathUtils.child(_PLUGIN.path,'RunLocal.ps1')
         local command='powershell.exe -NoProfile -ExecutionPolicy Bypass -File '..quoteArg(script)..' -Job '..quoteArg(jobPath)
-        local code,executeError,finished
-        LrTasks.startAsyncTask(function()
-            local executed,value=LrTasks.pcall(function() return LrTasks.execute(command) end)
-            if executed then code=value else executeError=value end
-            finished=true
-        end)
-        local elapsed=0
-        while not finished do
-            if progress:isCanceled() then error('已取消模型微調；基礎校正已保留，分析可能仍在背景完成。') end
-            local completed,total=0,count
-            local pf=io.open(LrPathUtils.child(folder,'local-result/progress.tsv'),'rb')
-            if pf then
-                local line=pf:read('*a'); pf:close()
-                local d,t=line:match('^LRPROGRESS\t1\t(%d+)\t(%d+)')
-                if d and tonumber(t)>0 then completed,total=tonumber(d),tonumber(t) end
-            end
-            progress:setPortionComplete(completed,total)
-            progress:setCaption('第 2 階段：已完成 '..completed..'/'..total..' 張；分析第 '..math.min(completed+1,total)..
-                ' 張；已等待 '..math.floor(elapsed)..' 秒')
-            LrTasks.sleep(1)
-            elapsed=elapsed+1
-        end
-        if executeError then error(tostring(executeError)) end
+        progress:done()
+        progress=nil
+        local code=runModel(folder,count,command)
         if code~=0 then error('本地模型微調失敗，基礎校正已保留。請查看 '..folder..'\\analysis.log') end
         -- The external process is not terminated by cancel. Cancellation still prevents apply.
-        if progress:isCanceled() then error('已取消模型微調套用；Lightroom 基礎校正已保留。') end
         if LrApplication.activeCatalog():getPath()~=catalog:getPath() then error('Active catalog changed; apply stopped') end
         local f=assert(io.open(LrPathUtils.child(folder,'local-result.tsv'),'rb'))
         local result=f:read('*a'); f:close()
@@ -109,7 +89,7 @@ LrTasks.startAsyncTask(function()
                 result:match('^LRRESULT\t3\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)')
             if not ready or tonumber(fail)~=0 then error('Invalid analysis completion marker') end
         end
-        progress:setCaption('Applying develop sliders / 套用顯影滑桿')
+        progress=LrProgressScope{title='套用 AI 顯影滑桿',caption='本地分析完成，正在寫入編目設定'}
         if tonumber(ready)>0 then
             apply(LrPathUtils.child(folder,'local-result/plan.tsv'),{photos=photos,silent=true},refine)
         end
@@ -129,6 +109,7 @@ LrTasks.startAsyncTask(function()
     end
     if not ok then
         if progress then progress:done() end
+        LrTasks.sleep(0)
         LrDialogs.message('本地修圖已停止',tostring(err)..'\n已完成基礎校正：'..state.applied..
             '\n已完成模型微調：'..refine.applied..
             '\n自動色調呼叫次數（含重試）：'..(state.toneStarted or 0)..'；部分滑桿可能已變更。'..
