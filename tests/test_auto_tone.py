@@ -7,7 +7,7 @@ PLUGIN=ROOT/'LightroomLocalDevelop.lrplugin'
 
 class AutoToneTests(unittest.TestCase):
     def test_auto_waits_for_changes_without_repeating_noops(self):
-        for mode in ('noop','delayed','too-late','bad-control'):
+        for mode in ('noop','delayed','too-late','unstable','bad-control'):
             lua=LuaRuntime(unpack_returned_tuples=True)
             g=lua.globals();g.plugin=PLUGIN.as_posix();g.mode=mode
             lua.execute('''
@@ -23,6 +23,7 @@ class AutoToneTests(unittest.TestCase):
                 ticks=ticks+1
                 if mode=='delayed' and calls>0 and ticks>8 then current.Shadows2012=48 end
                 if mode=='too-late' and calls>0 and ticks>32 then current.Shadows2012=48 end
+                if mode=='unstable' and calls>0 then current.Shadows2012=ticks%2 end
               end},
               LrApplicationView={switchToModule=function() end},
               LrDevelopController={getValue=function(k)
@@ -35,13 +36,18 @@ class AutoToneTests(unittest.TestCase):
             ''')
             run=lua.execute((PLUGIN/'AutoToneCore.lua').read_text(encoding='utf-8'))
             verified=run(g.catalog,g.photo,g.item,g.state)
-            unconfirmed=mode in ('noop','too-late','bad-control')
+            unconfirmed=mode in ('unstable','bad-control')
+            unchanged=mode in ('noop','too-late')
             self.assertEqual(bool(verified),not unconfirmed)
-            self.assertEqual(g.state['applied'],0 if unconfirmed else 1)
+            self.assertEqual(g.state['applied'],1 if mode=='delayed' else 0)
             self.assertEqual(g.calls,0 if mode=='bad-control' else 1)
             if mode=='noop':
                 self.assertLessEqual(g.ticks,15)
             if unconfirmed:self.assertEqual(g.state['unverified'],1)
+            if unchanged:
+                self.assertEqual(g.state['unchangedStable'],1)
+                self.assertIsNone(g.state['unverified'])
+                self.assertEqual(g.state['toneResults'][1]['status'],'unchanged_stable_current')
 
     def test_native_auto_tone_preserves_colour_and_sharpening(self):
         for portrait in (False,True):

@@ -51,7 +51,7 @@ return function(catalog,photo,item,state)
     for key,value in pairs(item.baseline) do
         if not M.same(M.settings(photo)[key],value) then error('自動校正前設定已變更') end
     end
-    local after,verified,attempts=M.settings(photo),false,0
+    local after,verified,unchangedStable,attempts=M.settings(photo),false,false,0
     for attempt=1,1 do
         attempts=attempt
         state.toneStarted=(state.toneStarted or 0)+1
@@ -71,12 +71,15 @@ return function(catalog,photo,item,state)
             if changed and stable>=4 then verified=true;break end
             -- Auto is idempotent: repeating it on an already-corrected photo is not
             -- evidence of success. Stop a stable no-change result after ~3 seconds.
-            -- Slow/unobserved changes stay unconfirmed and never enter model analysis.
-            if not changed and stable>=12 then break end
+            -- A stable current rendering can be analysed even if Auto made no change.
+            -- This is not evidence that Auto succeeded; report it separately.
+            if not changed and stable>=12 then unchangedStable=true;break end
         end
         if verified then break end
     end
-    if not verified then
+    if unchangedStable then
+        state.unchangedStable=(state.unchangedStable or 0)+1
+    elseif not verified then
         state.unverified=(state.unverified or 0)+1
     end
     local restore={}
@@ -96,11 +99,11 @@ return function(catalog,photo,item,state)
     end
     state.toneResults=state.toneResults or {}
     state.toneResults[#state.toneResults+1]={photo_id=tostring(photo.localIdentifier),
-        status=verified and 'changed_and_stable' or 'unchanged_or_unconfirmed',
+        status=verified and 'changed_and_stable' or unchangedStable and 'unchanged_stable_current' or 'unchanged_or_unconfirmed',
         attempts=attempts,before=before,after=M.settings(photo)}
     if verified then
         state.applied=state.applied+1
         state.autoTone=(state.autoTone or 0)+1
     end
-    return verified
+    return verified or unchangedStable
 end

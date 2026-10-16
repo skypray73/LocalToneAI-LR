@@ -213,6 +213,7 @@ class BridgeTests(unittest.TestCase):
             manifest_file = next(Path(tmp).glob('*/manifest.json'))
             manifest = json.loads(manifest_file.read_text(encoding='utf-8'))
             self.assertEqual(manifest['photos'][0]['photo_id'], '123')
+            self.assertEqual(manifest['photos'][0]['pipeline_stage'], 'current-develop')
             self.assertEqual(manifest['catalog'], self.manifest['catalog'])
             self.assertEqual(manifest['failures'], [])
             preview = manifest_file.parent / manifest['photos'][0]['preview']

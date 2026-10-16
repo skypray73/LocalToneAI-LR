@@ -13,6 +13,29 @@ from run_lightroom_job import completion_marker
 
 
 class PartialTests(unittest.TestCase):
+    def test_mixed_batch_keeps_per_photo_stage_for_model(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            photos = [{'photo_id': str(i), 'path': f'D:/Photos/{i}.NEF', 'preview': f'{i}.jpg',
+                       'file_format': 'RAW', 'settings': {'Exposure2012': 0}, 'pipeline_stage': stage}
+                      for i, stage in enumerate(['current-develop', 'after-lightroom-auto'], 1)]
+            manifest = {'version': 1, 'catalog': 'test.lrcat',
+                        'pipeline_stage': 'mixed-auto-and-current-develop', 'photos': photos}
+            path = root/'manifest.json'
+            path.write_text(json.dumps(manifest))
+            def analyze(photo, *args):
+                return {'photo_id': photo['photo_id'], 'path': photo['path'], 'subject': 'other',
+                        'confidence': 'high', 'status': 'ready', 'reason': 'Test',
+                        'settings': {'Exposure2012': .2}}, {}
+            with patch.object(sys, 'argv', ['analyze_local.py', '--manifest', str(path), '--out', str(root/'out')]), \
+                    patch.object(analyze_local, 'api', return_value={'models': [{'name': 'qwen3-vl:8b-instruct'}]}), \
+                    patch.object(analyze_local, 'analyze_photo', side_effect=analyze) as call:
+                analyze_local.main()
+                self.assertEqual([c.args[0]['pipeline_stage'] for c in call.call_args_list],
+                                 ['current-develop', 'after-lightroom-auto'])
+            decisions = json.loads((root/'out/decisions.json').read_text(encoding='utf-8'))
+            self.assertTrue(all(p['auto_tone'] is False for p in decisions['photos']))
+
     def test_incomplete_reply_retried_once_with_larger_budget(self):
         valid = {'done': True, 'message': {'content': '{"subject":"portrait"}'}}
         with patch.object(analyze_local, 'api', side_effect=[{'done': False}, valid]) as api:

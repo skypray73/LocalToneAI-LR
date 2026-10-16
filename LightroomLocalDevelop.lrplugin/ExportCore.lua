@@ -73,6 +73,7 @@ return function(options)
                     M.write(LrPathUtils.child(folder,'previews/'..id..'.jpg'),jpeg)
                     photos[#photos+1]={photo_id=id,path=photo:getRawMetadata('path'),
                         preview='previews/'..id..'.jpg',file_format=photo:getRawMetadata('fileFormat'),
+                        pipeline_stage=options.stages and options.stages[id] or options.stage or 'current-develop',
                         iso=photo:getRawMetadata('isoSpeedRating'),settings=baseline}
                 end
             else

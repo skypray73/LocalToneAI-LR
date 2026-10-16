@@ -42,24 +42,29 @@ LrTasks.startAsyncTask(function()
         LrFileUtils.createAllDirectories(root)
         progress=LrProgressScope{title='Local photo analysis / 本地修圖'}
         local verifiedPhotos={}
+        local stages={}
         local checkPath=LrPathUtils.child(root,'tone-check-'..os.date('%Y%m%d-%H%M%S')..'.json')
         for index,photo in ipairs(photos) do
             if progress:isCanceled() then error('已取消；已完成的 Lightroom 基礎校正仍保留，可查看步驟記錄。') end
             progress:setCaption('第 1 階段：Lightroom 自動校正 '..index..'/'..#photos..' 張')
             progress:setPortionComplete(index-1,#photos)
             local prior=state.applied
-            runAutoTone(catalog,photo,{baseline=M.settings(photo),settings={}},state)
-            if state.applied>prior then verifiedPhotos[#verifiedPhotos+1]=photo end
+            local eligible=runAutoTone(catalog,photo,{baseline=M.settings(photo),settings={}},state)
+            if eligible then
+                verifiedPhotos[#verifiedPhotos+1]=photo
+                stages[tostring(photo.localIdentifier)]=state.applied>prior and 'after-lightroom-auto' or 'current-develop'
+            end
             M.write(checkPath,M.json{version=1,confirmed=state.applied,unconfirmed=state.unverified or 0,
-                photos=state.toneResults or {}})
+                unchanged_stable=state.unchangedStable or 0,photos=state.toneResults or {}})
         end
-        if #verifiedPhotos==0 then error('本次自動色調數值均未變或未確認，沒有送入 AI 或套用偏好規則。請檢查步驟記錄，或少量重試。檢查紀錄：'..checkPath) end
+        if #verifiedPhotos==0 then error('本次沒有確認穩定的顯影設定，未送入 AI。請檢查步驟記錄：'..checkPath) end
         catalog:setSelectedPhotos(savedTarget or photos[1],photos)
         progress:setCaption('Exporting selected previews / 準備分析預覽')
         local count,failed
-        folder,count,failed=export{catalog=catalog,photos=verifiedPhotos,root=root,silent=true,progress=progress,stage='after-lightroom-auto'}
+        folder,count,failed=export{catalog=catalog,photos=verifiedPhotos,root=root,silent=true,progress=progress,
+            stage=(state.unchangedStable or 0)>0 and 'mixed-auto-and-current-develop' or 'after-lightroom-auto',stages=stages}
         M.write(LrPathUtils.child(folder,'tone-verification.json'),M.json{version=1,confirmed=state.applied,
-            unconfirmed=state.unverified or 0,photos=state.toneResults or {}})
+            unconfirmed=state.unverified or 0,unchanged_stable=state.unchangedStable or 0,photos=state.toneResults or {}})
         if failed>0 then error('校正後預覽轉存失敗：'..failed..' 張；模型微調未套用，基礎校正已保留。') end
         if count==0 then error('No previews to analyse') end
         if progress:isCanceled() then error('已取消模型分析；Lightroom 基礎校正已保留。') end
@@ -110,7 +115,8 @@ LrTasks.startAsyncTask(function()
         end
         progress:done()
         local summary=state.applied..' 張已確認 Lightroom 基礎校正數值變更。'..
-            '\n'..(state.unverified or 0)..' 張自動色調未變／未確認，已略過後續處理。'..
+            '\n'..(state.unchangedStable or 0)..' 張自動後數值未變且穩定，已以目前顯影設定接續 AI 分析。'..
+            '\n'..(state.unverified or 0)..' 張控制／數值未確認，已略過後續處理。'..
             '\n'..modelJobs..' 張已套用 AI 微調；'..policyJobs..' 張已套用主體偏好規則（人像鮮豔度／銳利化，風景清晰度／去朦朧）。'..
             '\n'..unchanged..' 張無需額外 AI 微調；'..review..' 張模型判斷待確認。'..
             '\n'..fail..' 張分析失敗，已略過；其他成功計畫已照常處理。'..
@@ -126,7 +132,7 @@ LrTasks.startAsyncTask(function()
         LrDialogs.message('本地修圖已停止',tostring(err)..'\n已完成基礎校正：'..state.applied..
             '\n已完成模型微調：'..refine.applied..
             '\n自動色調呼叫次數（含重試）：'..(state.toneStarted or 0)..'；部分滑桿可能已變更。'..
-            '\n未變／未確認：'..(state.unverified or 0)..' 張。'..
+            '\n數值未變且穩定：'..(state.unchangedStable or 0)..' 張；控制／數值未確認：'..(state.unverified or 0)..' 張。'..
             '\n未建立快照；需要時查看各張照片的步驟記錄。','critical')
     end
 end)

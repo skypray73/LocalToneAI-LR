@@ -30,7 +30,7 @@ def recover(batch, out):
     out.mkdir()
     remaining = []
     for pid in failed:
-        photo = dict(photos[pid], pipeline_stage=manifest.get('pipeline_stage', 'current-develop'))
+        photo = dict(photos[pid], pipeline_stage=photos[pid].get('pipeline_stage', manifest.get('pipeline_stage', 'current-develop')))
         try:
             preview = (batch / photo['preview']).resolve()
             if not preview.is_relative_to(batch):

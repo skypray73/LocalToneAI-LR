@@ -278,7 +278,7 @@ def main():
         decisions = {'style': args.style, 'source': 'local-ollama', 'model': args.model, 'photos': []}
         failures = []
         for index, photo in enumerate(manifest['photos'], 1):
-            photo = dict(photo, pipeline_stage=manifest.get('pipeline_stage','current-develop'))
+            photo = dict(photo, pipeline_stage=photo.get('pipeline_stage', manifest.get('pipeline_stage','current-develop')))
             started = time.monotonic()
             write_progress(args.out, index - 1, len(manifest['photos']), 'analysing')
             print(f'[{index}/{len(manifest["photos"])}] ID {photo["photo_id"]}: starting local inference', flush=True)
@@ -287,8 +287,8 @@ def main():
                 if not preview.is_relative_to(root):
                     raise ValueError('Preview must stay inside the batch folder')
                 decision, raw = analyze_photo(photo, preview, args.model, args.style)
-                # The plugin already performed Lightroom auto tone before exporting this preview.
-                # Keep the model's additional deltas, computed relative to the corrected baseline.
+                # Exported settings are the exact rendered baseline, including stable no-change
+                # cases. Never trigger Auto again when applying model deltas.
                 decision['auto_tone'] = False
                 # Enforce final sharpening policy and baseline constraints immediately.
                 compile_plan(manifest, {'photos': [decision]})
