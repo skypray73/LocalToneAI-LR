@@ -98,8 +98,12 @@ LrTasks.startAsyncTask(function()
         local f=assert(io.open(LrPathUtils.child(folder,'local-result.tsv'),'rb'))
         local result=f:read('*a'); f:close()
         local ready,modelJobs,policyJobs,unchanged,review,fail=
-            result:match('^LRRESULT\t3\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)')
-        if not ready or tonumber(fail)~=0 then error('Invalid analysis completion marker') end
+            result:match('^LRRESULT\t4\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)')
+        if not ready then
+            ready,modelJobs,policyJobs,unchanged,review,fail=
+                result:match('^LRRESULT\t3\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)')
+            if not ready or tonumber(fail)~=0 then error('Invalid analysis completion marker') end
+        end
         progress:setCaption('Applying develop sliders / 套用顯影滑桿')
         if tonumber(ready)>0 then
             apply(LrPathUtils.child(folder,'local-result/plan.tsv'),{photos=photos,silent=true},refine)
@@ -109,8 +113,9 @@ LrTasks.startAsyncTask(function()
             '\n'..(state.unverified or 0)..' 張自動色調未變／未確認，已略過後續處理。'..
             '\n'..modelJobs..' 張已套用 AI 微調；'..policyJobs..' 張已套用主體偏好規則（人像鮮豔度／銳利化，風景清晰度／去朦朧）。'..
             '\n'..unchanged..' 張無需額外 AI 微調；'..review..' 張模型判斷待確認。'..
+            '\n'..fail..' 張分析失敗，已略過；其他成功計畫已照常處理。'..
             '\n依設定未建立快照。'
-        LrDialogs.message('兩階段本地修圖完成',
+        LrDialogs.message(tonumber(fail)>0 and '本地修圖部分完成' or '兩階段本地修圖完成',
             summary..'\n工作資料夾：'..folder..'\n詳見 local-result/report.json。','info')
     end)
     if catalog and photos and #photos>0 then

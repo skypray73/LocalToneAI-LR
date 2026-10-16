@@ -9,10 +9,11 @@ PLUGIN=ROOT/'LightroomLocalDevelop.lrplugin'
 
 class AutoTests(unittest.TestCase):
     def test_auto_apply_and_cancel(self):
-        for answer,cancel,ready,expected in [('ok',False,1,1),('cancel',False,1,0),('ok',True,1,0),('ok',False,0,0)]:
+        for answer,cancel,ready,expected,failed in [('ok',False,1,1,0),('cancel',False,1,0,0),('ok',True,1,0,0),('ok',False,0,0,0),('ok',False,1,1,1)]:
             with self.subTest(answer=answer,cancel=cancel), tempfile.TemporaryDirectory(dir=None) as temp:
                 folder=Path(temp)
-                (folder/'local-result.tsv').write_text(f'LRRESULT\t3\t{ready}\t{ready}\t0\t{1-ready}\t0\t0\n')
+                version=4 if failed else 3
+                (folder/'local-result.tsv').write_text(f'LRRESULT\t{version}\t{ready}\t{ready}\t0\t{1-ready}\t0\t{failed}\n')
                 lua=LuaRuntime(unpack_returned_tuples=True)
                 g=lua.globals(); g.folder=folder.as_posix();g.plugin=PLUGIN.as_posix();g.answer=answer;g.cancel=cancel
                 g.getCommon=lambda:lua.execute((PLUGIN/'Common.lua').read_text())
@@ -63,6 +64,9 @@ class AutoTests(unittest.TestCase):
                 ''')
                 lua.execute((PLUGIN/'Auto.lua').read_text(encoding='utf-8'))
                 self.assertEqual(g.calls,expected)
+                if failed:
+                    self.assertEqual(g.messages[1][1], '本地修圖部分完成')
+                    self.assertIn('1 張分析失敗', g.messages[1][2])
                 if ready==0 and answer=='ok' and not cancel:
                     self.assertIn('1 張已確認 Lightroom 基礎校正數值變更',g.messages[1][2])
                     self.assertIn('0 張已套用 AI 微調',g.messages[1][2])

@@ -89,7 +89,26 @@ C:\AI\LightroomJobs\
 
 單張時間沒有保證值：初次載入模型較慢，人臉矛盾可能重看一次，基礎校正未變也可能重試。GPU 推論測試不代表整批端到端速度。取消或錯誤時，第一階段已發生的修改不會自動回復，請依視窗及步驟記錄檢查。
 
-## 另兩個手動選單
+## 單張模型失敗與舊批次救回
+
+1.12.0 起，單張模型回覆不完整、JSON 無法解析或連線暫時失敗，最多重試一次。第二次給較大的回覆長度；仍失敗就記入 `failures.json` 並繼續。成功且通過檢查的計畫照常套用，完成視窗另列「分析失敗」張數。待確認、無需微調和分析失敗分別計數。服務完全不可用時，逐張等待重試仍可能很久；重試不是無限等待或必定成功的保證。
+
+舊版可能已跑完所有分析，卻因一張失敗而擋住整批套用。先看 `analysis.log` 最後是否已有 `Complete` 及 `local-result/report.json`，不要直接重做第一階段。維護用工具可保留原結果，只對 `failures.json` 的照片使用既有預覽重試，產生新的計畫；不控制 Lightroom、不建立完成標記，也不覆寫原結果。
+
+在 PowerShell 執行（把批次名稱替換成你的實際資料夾；若 Python 在其他位置，改成相應執行檔）：
+
+```powershell
+& 'C:\AI\LightroomLocalDevelop\.venv\Scripts\python.exe' `
+  'C:\AI\LightroomLocalDevelop\scripts\resume_failed.py' `
+  --batch 'C:\AI\LightroomJobs\local-batch-日期時間' `
+  --out 'C:\AI\LightroomJobs\local-batch-日期時間\local-result-recovered'
+```
+
+新資料夾必須不存在；舊批次已有 `local-result.tsv` 時工具會拒絕，避免重複處理。重試仍失敗者不納入計畫。
+
+救回後重開 Lightroom、開啟原編目、選取原批次照片，再按 **圖庫 → 增效模組額外資訊 → 將修圖計畫套用至選取照片（手動）**，選新資料夾中的 `plan.tsv`。這一步才真正套用第二階段，不重做 Lightroom 自動。若照片在分析後又改過，baseline 檢查會擋下；不要跳過檢查或直接重複套用。原本已套用部分照片的批次應先逐張核對，不能拿這個工具當通用續傳按鈕。
+
+## 手動選單用途
 
 - **匯出選取照片供分析（手動）**：只建立目前顯影預覽，不自動執行第一階段。給熟悉命令列的人排錯使用。
 - **將修圖計畫套用至選取照片（手動）**：讀取現有 `plan.tsv`，仍做身分與 baseline 檢查。

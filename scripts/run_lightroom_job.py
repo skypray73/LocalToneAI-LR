@@ -9,6 +9,17 @@ import time
 from analyze_local import api
 
 
+def completion_marker(report):
+    """Failed photos are absent from the plan and counted separately from review/no-change."""
+    skipped_unchanged = sum(p['reason'].startswith('No change needed:') for p in report['skipped'])
+    review = len(report['skipped']) - skipped_unchanged
+    model_jobs = sum(bool(p['model_settings']) for p in report['ready'])
+    policy_jobs = sum(bool(p['policy_settings']) for p in report['ready'])
+    unchanged = skipped_unchanged + sum(not p['model_settings'] for p in report['ready'])
+    return 'LRRESULT\t4\t' + '\t'.join(map(str,
+        [len(report['ready']), model_jobs, policy_jobs, unchanged, review, len(report.get('failures', []))])) + '\n'
+
+
 def run_job(job_file):
     job = json.loads(Path(job_file).read_text(encoding='utf-8-sig'))
     batch = Path(job['batch']).resolve()
@@ -39,18 +50,10 @@ def run_job(job_file):
         completed = subprocess.run([sys.executable, str(Path(__file__).with_name('analyze_local.py')),
             '--manifest', str(batch / 'manifest.json'), '--out', str(result)], env=env,
             stdout=log, stderr=subprocess.STDOUT, creationflags=flags)
-    if completed.returncode not in (0, 1) or not (result / 'report.json').exists():
+    if completed.returncode not in (0, 1) or not (result / 'report.json').exists() or not (result / 'plan.tsv').exists():
         raise RuntimeError('Model refinement failed; see analysis.log. No model refinement applied.')
     report = json.loads((result / 'report.json').read_text(encoding='utf-8'))
-    if report.get('failures'):
-        raise RuntimeError('Some photos failed analysis. Automatic apply stopped; see local-result/report.json.')
-    skipped_unchanged = sum(p['reason'].startswith('No change needed:') for p in report['skipped'])
-    review = len(report['skipped']) - skipped_unchanged
-    model_jobs = sum(bool(p['model_settings']) for p in report['ready'])
-    policy_jobs = sum(bool(p['policy_settings']) for p in report['ready'])
-    unchanged = skipped_unchanged + sum(not p['model_settings'] for p in report['ready'])
-    marker.write_text('LRRESULT\t3\t' + '\t'.join(map(str,
-        [len(report['ready']), model_jobs, policy_jobs, unchanged, review, 0])) + '\n', encoding='utf-8')
+    marker.write_text(completion_marker(report), encoding='utf-8')
     return 0
 
 

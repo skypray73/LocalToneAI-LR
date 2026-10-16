@@ -200,6 +200,24 @@ def convert_result(photo, result, stats):
             'face_assist': assist, 'highlight_protection': protected}
 
 
+def request_result(request):
+    """Retry an incomplete/transient model reply once, with a larger output budget."""
+    for attempt in range(2):
+        payload = dict(request, options=dict(request['options'], num_predict=768 if attempt == 0 else 1536))
+        try:
+            response = api('/api/chat', payload)
+            if response.get('done') is not True or response.get('done_reason') == 'length':
+                raise ValueError('Model response incomplete')
+            result = json.loads(response['message']['content'])
+            if not isinstance(result, dict):
+                raise ValueError('Model JSON must be an object')
+            return result
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            if attempt:
+                raise
+            print('Local response unavailable/incomplete; retrying once: '+str(exc), flush=True)
+
+
 def analyze_photo(photo, preview, model, style):
     image, stats = preview_data(preview)
     with Image.open(io.BytesIO(base64.b64decode(image))) as opened:
@@ -213,10 +231,7 @@ def analyze_photo(photo, preview, model, style):
             'content': json.dumps({'style': style, 'pipeline_stage': photo.get('pipeline_stage','current-develop'),
                                   'baseline': safe_baseline, 'image_statistics': stats}, ensure_ascii=False),
             'images': [image, crops] if crops else [image]}]}
-    response = api('/api/chat', request)
-    if response.get('done') is not True or response.get('done_reason') == 'length':
-        raise ValueError('Model response incomplete')
-    result = json.loads(response['message']['content'])
+    result = request_result(request)
     # One bounded second look at contradictory dark-face judgements, using the same local images.
     if (result.get('subject') == 'portrait' and stats['face_analysis']['dark_face_count'] and
             result.get('face_lighting') in ('adequate', 'not_applicable', 'uncertain', 'intentional')):
@@ -227,10 +242,7 @@ def analyze_photo(photo, preview, model, style):
             'ordinary daylight/backlit shadows do not justify intentional darkness. The user wants '
             'the visible skin on cheeks and lower face comfortably bright. Only a clear creative '
             'silhouette or theatrical lighting justifies intentional. Describe the visible evidence.')
-        response = api('/api/chat', request)
-        if response.get('done') is not True or response.get('done_reason') == 'length':
-            raise ValueError('Face reassessment response incomplete')
-        result = json.loads(response['message']['content'])
+        result = request_result(request)
         result['face_rechecked'] = True
     return convert_result(photo, result, stats), result
 

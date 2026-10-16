@@ -1,6 +1,6 @@
 # LocalToneAI for Lightroom
 
-**本地 AI 輔助 Lightroom 修圖** · Windows · Lightroom Classic · 1.11.1
+**本地 AI 輔助 Lightroom 修圖** · Windows · Lightroom Classic · 1.12.0
 
 先讓 Lightroom「自動」建立基礎校正，再讓本機 AI 看校正後的預覽，判斷是否需要微調曝光、亮部與陰影。結果直接套用到目前編目的顯影滑桿。
 
