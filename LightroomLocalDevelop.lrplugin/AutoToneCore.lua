@@ -37,7 +37,7 @@ return function(catalog,photo,item,state)
             readySamples=readySamples+1
         else readySamples=0 end
         -- Catalog selection can change before Develop has loaded the selected image.
-        if readySamples>=9 then available=true;break end
+        if readySamples>=2 then available=true;break end
         LrTasks.sleep(0.25)
     end
     if not available then
@@ -52,7 +52,7 @@ return function(catalog,photo,item,state)
         if not M.same(M.settings(photo)[key],value) then error('自動校正前設定已變更') end
     end
     local after,verified,attempts=M.settings(photo),false,0
-    for attempt=1,2 do
+    for attempt=1,1 do
         attempts=attempt
         state.toneStarted=(state.toneStarted or 0)+1
         LrDevelopController.setAutoTone()
@@ -69,9 +69,12 @@ return function(catalog,photo,item,state)
             local signature=M.json(current)
             if signature==last then stable=stable+1 else stable=0;last=signature end
             if changed and stable>=4 then verified=true;break end
+            -- Auto is idempotent: repeating it on an already-corrected photo is not
+            -- evidence of success. Stop a stable no-change result after ~3 seconds.
+            -- Slow/unobserved changes stay unconfirmed and never enter model analysis.
+            if not changed and stable>=12 then break end
         end
         if verified then break end
-        LrTasks.sleep(1)
     end
     if not verified then
         state.unverified=(state.unverified or 0)+1

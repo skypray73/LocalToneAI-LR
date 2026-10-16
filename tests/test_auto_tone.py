@@ -6,8 +6,8 @@ from lupa.lua51 import LuaRuntime
 PLUGIN=ROOT/'LightroomLocalDevelop.lrplugin'
 
 class AutoToneTests(unittest.TestCase):
-    def test_auto_waits_for_changes_retries_and_never_counts_a_noop_as_success(self):
-        for mode in ('noop','delayed','retry','bad-control'):
+    def test_auto_waits_for_changes_without_repeating_noops(self):
+        for mode in ('noop','delayed','too-late','bad-control'):
             lua=LuaRuntime(unpack_returned_tuples=True)
             g=lua.globals();g.plugin=PLUGIN.as_posix();g.mode=mode
             lua.execute('''
@@ -21,7 +21,8 @@ class AutoToneTests(unittest.TestCase):
             modules={LrPathUtils={child=function(a,b) return a..'/'..b end},
               LrTasks={pcall=pcall,sleep=function()
                 ticks=ticks+1
-                if mode=='delayed' and calls>0 and ticks>32 then current.Shadows2012=48 end
+                if mode=='delayed' and calls>0 and ticks>8 then current.Shadows2012=48 end
+                if mode=='too-late' and calls>0 and ticks>32 then current.Shadows2012=48 end
               end},
               LrApplicationView={switchToModule=function() end},
               LrDevelopController={getValue=function(k)
@@ -34,10 +35,12 @@ class AutoToneTests(unittest.TestCase):
             ''')
             run=lua.execute((PLUGIN/'AutoToneCore.lua').read_text(encoding='utf-8'))
             verified=run(g.catalog,g.photo,g.item,g.state)
-            unconfirmed=mode in ('noop','bad-control')
+            unconfirmed=mode in ('noop','too-late','bad-control')
             self.assertEqual(bool(verified),not unconfirmed)
             self.assertEqual(g.state['applied'],0 if unconfirmed else 1)
-            self.assertEqual(g.calls,0 if mode=='bad-control' else 1 if mode=='delayed' else 2)
+            self.assertEqual(g.calls,0 if mode=='bad-control' else 1)
+            if mode=='noop':
+                self.assertLessEqual(g.ticks,15)
             if unconfirmed:self.assertEqual(g.state['unverified'],1)
 
     def test_native_auto_tone_preserves_colour_and_sharpening(self):
