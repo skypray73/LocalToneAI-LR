@@ -23,6 +23,14 @@
 
 本版本驗證環境是 Windows x64、Python 3.14、RTX 5080 16GB、96GB RAM。這是已測環境，不是最低硬體需求；其他硬體的速度和相容性需自行確認。
 
+### macOS 與顯卡建議
+
+**目前這個 Lightroom 外掛只支援 Windows x64，macOS 不能直接使用。** Ollama 本身可在 macOS 14 Sonoma 以上執行，Apple 晶片也支援 Metal GPU 加速；但本專案的外掛啟動器使用 `powershell.exe`、安裝程式使用 PowerShell，工作路徑亦固定為 `C:\AI`，所以只在 Mac 安裝 Ollama 並不足以跑完整修圖流程。參考：[Ollama macOS 下載需求](https://ollama.com/download/mac)、[Ollama GPU 支援](https://docs.ollama.com/gpu)。
+
+Windows 電腦若要執行本專案指定的 `qwen3-vl:8b-instruct`，建議選 **NVIDIA RTX 16GB VRAM 或以上**，較能和 Lightroom 同時使用。模型檔本身約 6.1GB；視覺推論、上下文及其他程式還會使用額外顯示記憶體，因此不能只按模型檔大小挑顯卡。12GB 顯卡可能需要共用系統記憶體或降低設定，速度和穩定性未保證；低於 12GB 不建議作為此工作流程的購買目標。這是本專案的實用建議，不是 Ollama 官方最低需求；本專案已驗證的顯卡為 RTX 5080 16GB。模型大小見 [Ollama Qwen3-VL 8B Instruct](https://ollama.com/library/qwen3-vl:8b-instruct)。
+
+若只想在 Mac 上使用 Ollama 跑這個模型，Apple Silicon 的統一記憶體建議 **32GB 或以上**，並保留記憶體給 macOS 與 Lightroom；這是硬體選購參考，並不代表目前 Lightroom 外掛已支援 Mac，也不是本專案已驗證的 Mac 規格。
+
 ## 2. 全部放在哪些資料夾？
 
 ```text
