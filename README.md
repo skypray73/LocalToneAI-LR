@@ -104,14 +104,6 @@ Lightroom 的「自動將變更寫入附屬檔案 (XMP/ACR)」關閉後，修圖
 
 **不需要先縮小 RAW、不需要把 JPEG 匯入，也不用手動選 plan.tsv。** 小張 JPEG 是外掛自行建立的分析資料，不會重新匯入編目。詳細操作、完成視窗與錯誤排查見 [使用與排錯](docs/USAGE.zh-TW.md)。
 
-## 操作示範影片
-
-https://github.com/user-attachments/assets/87eec719-4847-4963-a6d8-b9d844508f60
-
-[下載 MP4 備份（約 7 秒）](https://github.com/skypray73/LocalToneAI-LR/raw/refs/heads/main/docs/media/localtoneai-demo.mp4)
-
-這段短片由使用者提供，可在 GitHub 本頁的影片播放器觀看；若瀏覽器不支援，請下載 MP4 播放。影片是操作示例，不代表每張照片都需要或一定會套用 AI 額外微調。
-
 ## 5. 現在有哪些修圖規則？
 
 | 情況 | 行為 |
