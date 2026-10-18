@@ -8,7 +8,8 @@ return function(folder,count,command)
     local code,executeError,finished
     LrFunctionContext.callWithContext('LocalToneAIModelProgress',function(context)
         local progress=LrDialogs.showModalProgressDialog{
-            title='第 2 階段：本地 AI 分析',caption='準備本地模型，尚未套用 AI 滑桿',
+            title='第 2 階段：本地 AI 分析｜請勿操作 Lightroom',
+            caption='請等整批修圖完成再操作；目前正在準備本地模型。',
             functionContext=context,cannotCancel=false}
         progress:setPortionComplete(0,count)
         -- Let Lightroom draw the dialog before launching the worker.

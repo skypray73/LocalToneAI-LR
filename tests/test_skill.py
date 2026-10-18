@@ -127,7 +127,7 @@ class BridgeTests(unittest.TestCase):
                     LrApplication={activeCatalog=function() return catalog end},
                     LrTasks={startAsyncTask=function(fn) fn() end,pcall=pcall},
                     LrPathUtils={child=function(a,b) return a..'/'..b end},
-                    LrDialogs={runOpenPanel=function() return {plan_path} end,
+                    LrDialogs={confirm=function() return 'ok' end,runOpenPanel=function() return {plan_path} end,
                         message=function(title,body) messages[#messages+1]={title=title,body=body} end}
                 }
                 function import(name) return modules[name] end
@@ -145,6 +145,20 @@ class BridgeTests(unittest.TestCase):
             calls, snapshots, msgs = self.run_apply(mutation)
             self.assertEqual((calls, snapshots), (0, 0))
             self.assertEqual(msgs[1]['title'], 'Local apply stopped')
+
+    def test_manual_notice_cancellation_prevents_export_or_apply(self):
+        for entry in ['Export.lua','Apply.lua']:
+            lua=LuaRuntime(unpack_returned_tuples=True)
+            lua.execute('''
+            _PLUGIN={path='plugin'};calls=0
+            modules={LrTasks={startAsyncTask=function(f) f() end,pcall=pcall},
+              LrPathUtils={child=function(a,b) return a..'/'..b end},
+              LrDialogs={confirm=function() return 'cancel' end}}
+            function import(n) return modules[n] end
+            function dofile(p) return function() calls=calls+1 end end
+            ''')
+            lua.execute((PLUGIN/entry).read_text(encoding='utf-8'))
+            self.assertEqual(lua.globals().calls,0)
 
     def test_partial_failure_stops(self):
         calls, snapshots, msgs = self.run_apply(fail_second=True)
@@ -204,7 +218,7 @@ class BridgeTests(unittest.TestCase):
                     LrTasks={startAsyncTask=function(fn) fn() end,pcall=pcall,sleep=function() end},
                     LrPathUtils={child=function(a,b) return a..'/'..b end},
                     LrFileUtils={exists=py_exists,createAllDirectories=py_mkdir},
-                    LrDialogs={runOpenPanel=function() return {output_path} end,
+                    LrDialogs={confirm=function() return 'ok' end,runOpenPanel=function() return {output_path} end,
                         message=function(title,body) messages[#messages+1]={title=title,body=body} end}
                 }
                 function import(name) return modules[name] end

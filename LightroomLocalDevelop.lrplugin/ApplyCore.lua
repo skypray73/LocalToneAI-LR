@@ -55,7 +55,7 @@ return function(path,options,state)
             catalog:setSelectedPhotos(savedTarget or savedSelection[1],savedSelection)
             if not success then error(message) end
             if not options.silent then
-                LrDialogs.message('自動亮度與對比校正完成',state.applied..' 張已處理；請在編輯相片查看滑桿。','info')
+                LrDialogs.message('自動亮度與對比校正完成',state.applied..' 張已處理。\n可以繼續操作 Lightroom，請在編輯相片查看滑桿。','info')
             end
             return state.applied
         end
@@ -69,7 +69,7 @@ return function(path,options,state)
         end,{timeout=30})
         if state.applied~=#order then error('Write access incomplete; expected '..#order..', processed '..state.applied) end
         if not options.silent then
-            LrDialogs.message('Local plan processed',state.applied..' photos. Verify in Develop.','info')
+            LrDialogs.message('修圖計畫套用完成',state.applied..' 張已套用。\n可以繼續操作 Lightroom，請到「編輯相片」查看效果。','info')
         end
         return state.applied
 

@@ -33,11 +33,13 @@ LrTasks.startAsyncTask(function()
         state.modifiedSkipped=0
         state.unreadableSkipped=0
         -- SDK application calls do not suppress Lightroom's own automatic metadata writing.
-        local answer=LrDialogs.confirm('Catalog-only editing / 只修改編目',
-            '先開啟「編目設定」>「中繼資料」，取消勾選「自動將變更寫入附屬檔案 (XMP/ACR)」。\n'..
-            '此外掛無法替你可靠讀取或關閉此設定。只有確定已關閉才繼續。\n'..
-            '只修改選取照片的顯影滑桿；不建立快照、不儲存中繼資料、不覆蓋原檔。',
-            '已關閉，開始本地修圖','取消')
+        local answer=LrDialogs.confirm('修圖期間，請暫停操作 Lightroom',
+            '從開始到完成，請勿切換照片、切換編目、調整滑桿或再啟動其他修圖工作。\n'..
+            '看到「修圖完成」視窗後，就可以繼續操作。需要中止時，請用外掛的取消按鈕。\n'..
+            '可以使用其他程式，請保持 Lightroom 開啟。\n\n'..
+            '開始前請確認：「編輯 → 編目設定 → 中繼資料」中的\n'..
+            '「自動將變更寫入附屬檔案 (XMP/ACR)」未勾選。外掛無法代為確認。',
+            '已確認，開始修圖','取消')
         if answer~='ok' then return end
         local root='C:\\AI\\LightroomJobs'
         for _,p in ipairs(photos) do
@@ -53,7 +55,7 @@ LrTasks.startAsyncTask(function()
         local checkPath=LrPathUtils.child(root,'tone-check-'..os.date('%Y%m%d-%H%M%S')..'.json')
         for index,photo in ipairs(photos) do
             if progress:isCanceled() then error('已取消；已完成的 Lightroom 基礎校正仍保留，可查看步驟記錄。') end
-            progress:setCaption('第 1 階段：Lightroom 自動校正 '..index..'/'..#photos..' 張')
+            progress:setCaption('第 1 階段：LR 自動校正 '..index..'/'..#photos..' 張｜請勿操作 Lightroom')
             progress:setPortionComplete(index-1,#photos)
             local baseline=M.settings(photo)
             local zero,key=true,nil
@@ -89,7 +91,7 @@ LrTasks.startAsyncTask(function()
         end
         if #verifiedPhotos==0 then error('本次沒有確認穩定的顯影設定，未送入 AI。請檢查步驟記錄：'..checkPath) end
         catalog:setSelectedPhotos(savedTarget or photos[1],photos)
-        progress:setCaption('Exporting selected previews / 準備分析預覽')
+        progress:setCaption('準備分析預覽｜請勿切換照片或調整滑桿')
         local count,failed
         folder,count,failed=export{catalog=catalog,photos=verifiedPhotos,root=root,silent=true,progress=progress,
             stage=(state.unchangedStable or 0)>0 and 'mixed-auto-and-current-develop' or 'after-lightroom-auto',stages=stages}
@@ -120,7 +122,8 @@ LrTasks.startAsyncTask(function()
                 result:match('^LRRESULT\t3\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)\t(%d+)')
             if not ready or tonumber(fail)~=0 then error('Invalid analysis completion marker') end
         end
-        progress=LrProgressScope{title='套用 AI 顯影滑桿',caption='本地分析完成，正在寫入編目設定'}
+        progress=LrProgressScope{title='套用 AI 顯影滑桿｜請勿操作 Lightroom',
+            caption='正在寫入修圖設定，請勿切換照片、切換編目或調整滑桿。'}
         if tonumber(ready)>0 then
             apply(LrPathUtils.child(folder,'local-result/plan.tsv'),{photos=verifiedPhotos,silent=true},refine)
         end

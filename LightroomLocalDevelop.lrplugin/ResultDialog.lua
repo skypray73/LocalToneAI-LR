@@ -35,6 +35,7 @@ function R.build(data)
     if number('failed')>0 then
         lines[#lines+1]='AI 分析失敗：'..number('failed')..' 張（先前調整已保留）'
     end
+    footer='本次流程已結束，可繼續操作 Lightroom。\n'..footer
     return {title=title,headline=headline,lines=lines,footer=footer,
         mode=(data.onlyUnmodified and '僅處理未修改照片' or '處理全部選取照片')..' · 選取 '..number('selected')..' 張',
         completed=completed,attention=attention}

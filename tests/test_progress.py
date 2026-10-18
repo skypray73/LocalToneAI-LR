@@ -47,7 +47,7 @@ class ProgressTests(unittest.TestCase):
                     local ok,res=pcall(f,{});closed=true;if not ok then error(res) end
                   end},
                   LrDialogs={showModalProgressDialog=function(opts)
-                    assert(opts.title=='第 2 階段：本地 AI 分析' and opts.functionContext)
+                    assert(opts.title:find('第 2 階段：本地 AI 分析',1,true) and opts.functionContext)
                     return {done=function() end,setPortionComplete=function(s,d,t) done,total=d,t end,
                       setCaption=function(s,c) captions[#captions+1]=c end,
                       isCanceled=function() return mode=='cancel-before' or mode=='cancel-after' and ticks>=2 end}

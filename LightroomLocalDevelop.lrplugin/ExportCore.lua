@@ -26,7 +26,7 @@ return function(options)
         for index,photo in ipairs(selected) do
             if options.progress then
                 if options.progress:isCanceled() then error('已取消預覽匯出，未套用設定。') end
-                options.progress:setCaption('準備第 '..index..'/'..#selected..' 張預覽')
+                options.progress:setCaption('匯出預覽 '..index..'/'..#selected..' 張｜請勿切換照片或調整滑桿')
                 options.progress:setPortionComplete(index-1,#selected)
             end
             local id=tostring(photo.localIdentifier)
@@ -85,7 +85,8 @@ return function(options)
             ',"photos":'..M.array(photos)..',"failures":'..M.array(failures)..'}'
         M.write(LrPathUtils.child(folder,'manifest.json'),data)
         if not options.silent then
-            LrDialogs.message('Local export complete',#photos..' previews; '..#failures..' failures.\n'..folder,'info')
+            LrDialogs.message('預覽匯出完成','已匯出 '..#photos..' 張；失敗 '..#failures..
+                ' 張。\n可以繼續操作 Lightroom。\n工作資料夾：'..folder,'info')
         end
         return folder,#photos,#failures
 end
