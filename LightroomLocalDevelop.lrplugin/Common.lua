@@ -67,6 +67,17 @@ function M.same(a,b)
     if type(a)=='number' and type(b)=='number' then return math.abs(a-b)<0.000001 end
     return a==b
 end
+-- Exact zero is intentional: even tiny non-zero values count as edited.
+function M.hasZeroTone(settings)
+    for _,key in ipairs({'Exposure2012','Contrast2012','Highlights2012','Shadows2012','Whites2012','Blacks2012'}) do
+        local value=settings[key]
+        if type(value)~='number' or value~=value or value==math.huge or value==-math.huge then
+            return nil,key
+        end
+        if value~=0 then return false,key end
+    end
+    return true
+end
 function M.readPlan(path)
     local f,err=io.open(path,'rb')
     if not f then error(err) end

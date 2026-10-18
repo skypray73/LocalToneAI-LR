@@ -21,6 +21,7 @@ class AutoTests(unittest.TestCase):
                 g.unchanged=unchanged
                 g.getCommon=lambda:lua.execute((PLUGIN/'Common.lua').read_text())
                 g.getModel=lambda:lua.execute((PLUGIN/'ModelProgress.lua').read_text(encoding='utf-8'))
+                g.getAutoCore=lambda:lua.execute((PLUGIN/'AutoCore.lua').read_text(encoding='utf-8'))
                 lua.execute('''
                 calls=0; exports=0; autoCalls=0; messages={}; commands={}; busy=false; deferred=nil; portions=0
                 catalog={}; photo={localIdentifier=123}
@@ -56,6 +57,7 @@ class AutoTests(unittest.TestCase):
                 function import(n) return modules[n] end
                 function dofile(path)
                   if path:match('Common.lua$') then return getCommon() end
+                  if path:match('AutoCore.lua$') then return getAutoCore() end
                   if path:match('ModelProgress.lua$') then return getModel() end
                   if path:match('AutoToneCore.lua$') then return function(cat,p,item,state)
                     assert(exports==0 and calls==0);autoCalls=autoCalls+1;state.applied=state.applied+1;

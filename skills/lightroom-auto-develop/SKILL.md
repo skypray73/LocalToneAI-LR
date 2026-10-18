@@ -5,7 +5,7 @@ description: 協助安裝、維護和排查 LocalToneAI 本地 AI Lightroom Clas
 
 # LocalToneAI 本地 AI 輔助 Lightroom 修圖
 
-日常入口是「圖庫 → 增效模組額外資訊 → 本地分析並套用選取照片」。技能提供安裝與維護流程，不是照片推論服務。先依使用者需求選讀 [安裝](references/INSTALL.zh-TW.md)、[操作與排錯](references/USAGE.zh-TW.md)、[規則](references/RULES.zh-TW.md)。
+日常入口是「圖庫 → 增效模組額外資訊」下的「本地分析並套用選取照片（全部）」及「本地分析並套用選取照片（僅未修改）」。技能提供安裝與維護流程，不是照片推論服務。先依使用者需求選讀 [安裝](references/INSTALL.zh-TW.md)、[操作與排錯](references/USAGE.zh-TW.md)、[規則](references/RULES.zh-TW.md)。
 
 ## 本地元件
 
@@ -14,6 +14,8 @@ Ollama 執行程式 `C:\AI\Ollama\ollama.exe`；模型 `qwen3-vl:8b-instruct` �
 照片、RAW、臉部拼圖的分析留在本機；預設只讀程式、設定及文字紀錄，不交給雲端模型看圖。推論 API 只連 `127.0.0.1:11434`，禁止 cloud 模型、HTTP 重新導向與系統代理。已有 Ollama 服務時確認其設定，不能宣稱新程序的環境變數已改變既有服務。
 
 ## 修圖流程與限制
+
+1.13.0 兩種入口共用 AutoCore.lua；Auto.lua 處理全部選取，AutoUnmodified.lua 在每張 Auto 前以 Common.hasZeroTone 篩選。僅未修改只檢查 Exposure2012、Contrast2012、Highlights2012、Shadows2012、Whites2012、Blacks2012 六項精確等於 0；任一非零跳過，缺少或非有限數值另外略過。白平衡、銳利化、鮮豔度、裁切與歷史不列入判斷。跳過者不得送入 Auto、匯出、模型或套用白名單。全部略過是正常結束。檢查紀錄保存模式、原選取總數及略過原因；恢復原選取，不能把篩選略過混成模型失敗或待確認。
 
 逐張 LR 原生 Auto → 等待顯影數值穩定 → 重新正式轉存預覽 → 本地模型看目前圖與臉部拼圖 → 產生增量計畫 → 編目／ID／完整路徑與 baseline 檢查 → SDK 套回。每張保留 pipeline_stage：有觀察到變更為 after-lightroom-auto，穩定未變為 current-develop。不能直接改編目資料庫，不用舊快取縮圖，不把微調加在與預覽不同的 baseline。
 

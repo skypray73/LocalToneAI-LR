@@ -201,7 +201,7 @@ Lightroom Classic 頂端選單
 
 選單路徑、關閉後只自動儲存到編目，以及手動寫入的差異，可對照 [Adobe 官方中文說明：中繼資料基本知識與動作](https://helpx.adobe.com/tw/lightroom-classic/desktop/organize-photos-in-lightroom-classic/metadata-basics-actions.html)。不同格式的寫入方式見 [Adobe 官方說明](https://helpx.adobe.com/lightroom-classic/desktop/organize-photos-in-lightroom-classic/metadata-basics-actions.html)。
 
-設定好後，從 **圖庫 → 增效模組額外資訊 → 本地分析並套用選取照片** 開始，見 [日常操作](USAGE.zh-TW.md)。若找不到選單，重新啟動 Lightroom 並確認外掛已載入。
+設定好後，從 **圖庫 → 增效模組額外資訊** 選「本地分析並套用選取照片（全部）」或「本地分析並套用選取照片（僅未修改）」開始，見 [日常操作](USAGE.zh-TW.md)。若找不到選單，重新啟動 Lightroom 並確認外掛已載入。
 
 ## 更新已有安裝
 
