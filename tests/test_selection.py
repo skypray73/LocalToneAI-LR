@@ -70,6 +70,9 @@ class SelectionTests(unittest.TestCase):
                 function dofile(path)
                   if path:match('Common.lua$') then return common() end
                   if path:match('AutoCore.lua$') then return core() end
+                  if path:match('ResultDialog.lua$') then return {show=function(data)
+                    resultData=data;messages[#messages+1]={'result',data.details}
+                  end} end
                   if path:match('AutoToneCore.lua$') then return function(cat,p,item,state)
                     autoIDs[#autoIDs+1]=p.localIdentifier
                     state.applied=state.applied+1;p.settings.Exposure2012=.5
@@ -103,7 +106,7 @@ class SelectionTests(unittest.TestCase):
                         self.assertEqual(audit['modified_skipped'],2)
                         self.assertEqual(audit['unreadable_skipped'],1)
                     else:
-                        self.assertEqual(g.messages[1][1],'本地修圖：沒有符合條件的照片')
+                        self.assertTrue(g.resultData.allSkipped)
                         self.assertFalse((folder/'local-job.json').exists())
 
 

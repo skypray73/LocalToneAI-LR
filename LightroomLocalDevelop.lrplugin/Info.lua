@@ -3,7 +3,7 @@ return {
     LrSdkMinimumVersion = 7.4,
     LrToolkitIdentifier = 'local.lightroom.local-develop',
     LrPluginName = '本地 AI 顯影',
-    VERSION = { major=1, minor=13, revision=0, build=1 },
+    VERSION = { major=1, minor=13, revision=1, build=1 },
     LrLibraryMenuItems = {
         { title='本地分析並套用選取照片（全部）', file='Auto.lua' },
         { title='本地分析並套用選取照片（僅未修改）', file='AutoUnmodified.lua' },

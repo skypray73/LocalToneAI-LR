@@ -22,6 +22,7 @@ class AutoTests(unittest.TestCase):
                 g.getCommon=lambda:lua.execute((PLUGIN/'Common.lua').read_text())
                 g.getModel=lambda:lua.execute((PLUGIN/'ModelProgress.lua').read_text(encoding='utf-8'))
                 g.getAutoCore=lambda:lua.execute((PLUGIN/'AutoCore.lua').read_text(encoding='utf-8'))
+                g.getResult=lambda:lua.execute((PLUGIN/'ResultDialog.lua').read_text(encoding='utf-8'))
                 lua.execute('''
                 calls=0; exports=0; autoCalls=0; messages={}; commands={}; busy=false; deferred=nil; portions=0
                 catalog={}; photo={localIdentifier=123}
@@ -58,6 +59,9 @@ class AutoTests(unittest.TestCase):
                 function dofile(path)
                   if path:match('Common.lua$') then return getCommon() end
                   if path:match('AutoCore.lua$') then return getAutoCore() end
+                  if path:match('ResultDialog.lua$') then return {show=function(data)
+                    resultData=data;messages[#messages+1]={getResult().build(data).title,data.details}
+                  end} end
                   if path:match('ModelProgress.lua$') then return getModel() end
                   if path:match('AutoToneCore.lua$') then return function(cat,p,item,state)
                     assert(exports==0 and calls==0);autoCalls=autoCalls+1;state.applied=state.applied+1;
@@ -85,7 +89,7 @@ class AutoTests(unittest.TestCase):
                     self.assertIn('0 張已確認 Lightroom 基礎校正數值變更',g.messages[1][2])
                     self.assertIn('1 張自動後數值未變且穩定',g.messages[1][2])
                 if failed:
-                    self.assertEqual(g.messages[1][1], '本地修圖部分完成')
+                    self.assertEqual(g.messages[1][1], '修圖完成，部分照片需查看')
                     self.assertIn('1 張分析失敗', g.messages[1][2])
                 if ready==0 and answer=='ok' and not cancel:
                     self.assertIn('1 張已確認 Lightroom 基礎校正數值變更',g.messages[1][2])

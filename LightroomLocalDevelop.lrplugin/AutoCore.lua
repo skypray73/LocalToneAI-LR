@@ -9,6 +9,7 @@ local export=dofile(LrPathUtils.child(_PLUGIN.path,'ExportCore.lua'))
 local apply=dofile(LrPathUtils.child(_PLUGIN.path,'ApplyCore.lua'))
 local runAutoTone=dofile(LrPathUtils.child(_PLUGIN.path,'AutoToneCore.lua'))
 local runModel=dofile(LrPathUtils.child(_PLUGIN.path,'ModelProgress.lua'))
+local resultDialog=dofile(LrPathUtils.child(_PLUGIN.path,'ResultDialog.lua'))
 local function quoteArg(s)
     if s:find('[%%!"\r\n]') then error('Unsupported command path characters') end
     return '"'..s..'"'
@@ -80,9 +81,10 @@ LrTasks.startAsyncTask(function()
         end
         if state.modifiedSkipped+state.unreadableSkipped==#photos then
             progress:done()
-            LrDialogs.message('本地修圖：沒有符合條件的照片',
-                '選取 '..#photos..' 張；已修改略過 '..state.modifiedSkipped..' 張；數值無法確認略過 '..state.unreadableSkipped..
-                ' 張。\n未執行 LR 自動、預覽匯出或 AI 分析。\n檢查紀錄：'..checkPath,'info')
+            resultDialog.show{allSkipped=true,onlyUnmodified=options.onlyUnmodified,selected=#photos,
+                modified=state.modifiedSkipped,unreadable=state.unreadableSkipped,
+                details='選取 '..#photos..' 張；已修改略過 '..state.modifiedSkipped..' 張；數值無法確認略過 '..state.unreadableSkipped..
+                ' 張。\n未執行 LR 自動、預覽匯出或 AI 分析。\n檢查紀錄：'..checkPath}
             return
         end
         if #verifiedPhotos==0 then error('本次沒有確認穩定的顯影設定，未送入 AI。請檢查步驟記錄：'..checkPath) end
@@ -133,8 +135,11 @@ LrTasks.startAsyncTask(function()
             '\n'..unchanged..' 張無需額外 AI 微調；'..review..' 張模型判斷待確認。'..
             '\n'..fail..' 張分析失敗，已略過；其他成功計畫已照常處理。'..
             '\n依設定未建立快照。'
-        LrDialogs.message(tonumber(fail)>0 and '本地修圖部分完成' or '兩階段本地修圖完成',
-            summary..'\n工作資料夾：'..folder..'\n詳見 local-result/report.json。','info')
+        resultDialog.show{onlyUnmodified=options.onlyUnmodified,selected=state.selected,analysed=count,
+            autoChanged=state.applied,stableCurrent=state.unchangedStable,model=modelJobs,policy=policyJobs,
+            modified=state.modifiedSkipped,unreadable=state.unreadableSkipped,unverified=state.unverified,
+            review=review,failed=fail,
+            details=summary..'\n工作資料夾：'..folder..'\n詳見 local-result/report.json。'}
     end)
     if catalog and photos and #photos>0 then
         LrTasks.pcall(function() catalog:setSelectedPhotos(savedTarget or photos[1],photos) end)
